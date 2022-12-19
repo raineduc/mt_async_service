@@ -40,14 +40,19 @@ public class BalanceService {
           .preparedQuery("SELECT * FROM balance WHERE id=$1")
           .execute(Tuple.of(id))
           .compose(rowSet -> {
-            if (rowSet.size() == 0) {
-              return Future.succeededFuture(Optional.empty());
-            }
-            Long result = rowSet.iterator().next().getLong("amount");
-            balanceCache.put(id, result);
-            lock.release();
-            return Future.succeededFuture(Optional.of(result));
-          });
+              if (rowSet.size() == 0) {
+                lock.release();
+                return Future.succeededFuture(Optional.empty());
+              }
+              Long result = rowSet.iterator().next().getLong("amount");
+              balanceCache.put(id, result);
+              lock.release();
+              return Future.succeededFuture(Optional.of(result));
+            },
+            err -> {
+              lock.release();
+              return Future.failedFuture(err);
+            });
         return futureResult;
       });
   }
@@ -65,11 +70,15 @@ public class BalanceService {
           )
           .execute(Tuple.of(id, amount))
           .compose(rowSet -> {
-            Long result = rowSet.iterator().next().getLong("amount");
-            balanceCache.put(id, result);
-            lock.release();
-            return Future.succeededFuture(result);
-          });
+              Long result = rowSet.iterator().next().getLong("amount");
+              balanceCache.put(id, result);
+              lock.release();
+              return Future.succeededFuture(result);
+            },
+            err -> {
+              lock.release();
+              return Future.failedFuture(err);
+            });
         return futureResult;
       });
   }

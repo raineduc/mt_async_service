@@ -2,24 +2,26 @@ package rain.ifuture_task;
 
 import io.vertx.core.json.JsonObject;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PerfClient {
   // parameters
-  private static int threadCount = 100;
+  private static int threadCount = 40;
   private static double readQuota = 0.3;
   private static double writeQuota = 1 - readQuota;
   private static List<Long> readIdList;
@@ -49,7 +51,7 @@ public class PerfClient {
   }
 
   public static void main(String[] args) throws InterruptedException, IOException {
-    PrintWriter writer = new PrintWriter(new FileWriter("./log.txt"));
+    PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream("./log.txt"), StandardCharsets.UTF_8));
     ScheduledExecutorService executor = Executors.newScheduledThreadPool(threadCount + 1);
     CountDownLatch allThreadsFinishedSignal = new CountDownLatch(threadCount);
 
@@ -70,7 +72,8 @@ public class PerfClient {
     int allRequests = getRequests.get() + changeRequests.get();
     writer.printf("Сумарное количество запросов: %d\n", allRequests);
     writer.printf("Средний RPS: %f\n", ((double) allRequests) / testDuration.getSeconds());
-    writer.printf("Количество таймаутов: %d", timeouts.get());
+    writer.printf("Количество таймаутов: %d\n", timeouts.get());
+    writer.printf("Ошибок сервера: %d\n", serverErrors.get());
 
     writer.close();
   }
@@ -100,7 +103,6 @@ public class PerfClient {
   public static void getBalance() throws URISyntaxException, IOException, InterruptedException {
     Long id = readIdList.get(getRandomIndex(readIdList.size() - 1));
 
-    Instant start = Instant.now();
     try {
       HttpRequest request = HttpRequest.newBuilder()
         .uri(new URI(basePath + "api/balance" + id))
@@ -111,7 +113,6 @@ public class PerfClient {
         .build()
         .send(request, HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() == 200 || response.statusCode() == 404) {
-        Instant finish = Instant.now();
         getRequests.incrementAndGet();
       } else if (response.statusCode() >= 500) {
         serverErrors.incrementAndGet();
@@ -124,7 +125,6 @@ public class PerfClient {
   public static void changeBalance() throws URISyntaxException, IOException, InterruptedException {
     Long id = writeIdList.get(getRandomIndex(readIdList.size() - 1));
 
-    Instant start = Instant.now();
     try {
       JsonObject body = new JsonObject()
         .put("balanceId", id)
@@ -139,7 +139,6 @@ public class PerfClient {
         .build()
         .send(request, HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() == 200) {
-        Instant finish = Instant.now();
         changeRequests.incrementAndGet();
       } else if (response.statusCode() >= 500) {
         serverErrors.incrementAndGet();

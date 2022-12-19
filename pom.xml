@@ -19,7 +19,7 @@
     <vertx.version>4.3.6</vertx.version>
     <junit-jupiter.version>5.7.0</junit-jupiter.version>
 
-    <main.verticle>rain.ifuture_task.BalanceVerticle</main.verticle>
+    <main.verticle>rain.ifuture_task.MainVerticle</main.verticle>
     <launcher.class>io.vertx.core.Launcher</launcher.class>
   </properties>
 
@@ -88,6 +88,26 @@
               </outputFile>
             </configuration>
           </execution>
+          <execution>
+            <id>perf-client</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer
+                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>rain.ifuture_task.PerfClient</Main-Class>
+                  </manifestEntries>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <outputFile>${project.build.directory}/perf-client-fat.jar
+              </outputFile>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -104,6 +124,4 @@
       </plugin>
     </plugins>
   </build>
-
-
 </project>

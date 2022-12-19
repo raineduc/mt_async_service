@@ -7,21 +7,16 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPool;
-import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlClient;
 
 public class BalanceVerticle extends AbstractVerticle {
-  private SqlClient sqlClient;
-  private PgPool pgPool;
   private BalanceService balanceService;
+
+  public BalanceVerticle(BalanceService balanceService) {
+    this.balanceService = balanceService;
+  }
 
   @Override
   public void start(Promise<Void> startPromise) throws Exception {
-    setUpPostgres();
-    balanceService = new BalanceService(sqlClient, pgPool, vertx.sharedData());
-
     // Create a Router
     Router router = Router.router(vertx);
 
@@ -52,23 +47,6 @@ public class BalanceVerticle extends AbstractVerticle {
       );
   }
 
-  private void setUpPostgres() {
-    PgConnectOptions connectOptions = new PgConnectOptions()
-      .setPort(5432)
-      .setHost("localhost")
-      .setDatabase("ifuture_task")
-      .setUser("postgres")
-      .setPassword("secret")
-      .setCachePreparedStatements(true)
-      .setPreparedStatementCacheMaxSize(1000);
-
-    PoolOptions poolOptions = new PoolOptions()
-      .setMaxSize(50);
-
-    sqlClient = PgPool.client(vertx, connectOptions, poolOptions);
-    pgPool = PgPool.pool(vertx, connectOptions, poolOptions);
-  }
-
   private void getBalance(RoutingContext ctx) {
     Long id = Long.parseLong(ctx.pathParam("balanceId"));
     balanceService.getBalance(id)
@@ -87,6 +65,7 @@ public class BalanceVerticle extends AbstractVerticle {
         }
       })
       .onFailure(err -> {
+        System.out.println(err.getMessage());
         ctx.response().setStatusCode(500);
         ctx.response().end();
       });
@@ -103,6 +82,7 @@ public class BalanceVerticle extends AbstractVerticle {
         ctx.response().end();
       })
       .onFailure(err -> {
+        System.out.println(err.getMessage());
         ctx.response().setStatusCode(500);
         ctx.response().end();
       });
