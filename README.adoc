@@ -4,21 +4,24 @@ image:https://img.shields.io/badge/vert.x-4.3.6-purple.svg[link="https://vertx.i
 
 This application was generated using http://start.vertx.io
 
-== Building
+== Сборка и запуск приложения
 
-To launch your tests:
-```
-./mvnw clean test
-```
+Перед сборкой можно поменять параметры тестирования в файле *PerfClient.java*
 
-To package your application:
+Сборка :
 ```
 ./mvnw clean package
 ```
 
-To run your application:
+Запустить сервер и PostgreSQL в Docker контейнерах:
 ```
-./mvnw clean compile exec:java
+docker-compose up -d
+```
+
+
+Запустить клиент (файл логов запишется в текущей рабочей директории):
+```
+java -jar target/perf-client-fat.jar
 ```
 
 == Help
